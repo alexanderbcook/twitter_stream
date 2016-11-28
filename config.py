@@ -1,7 +1,8 @@
-consumer_key = 'VSi4VBVpTq4YMpv20VekE9imL'
-consumer_secret = 'L8vjZhoTkVJTbkfXWAmoweBR0ihOaRfPCFJetafRHM4uR2G97h'
-access_token = '791510670034374656-1YPNpcLKI6gLVmhs2B99zNAjQKYmJfs'
-access_secret = 'irF54PNgE9FKdEsY4nOqFrjBhR4cl4VwDtREGgAyVe03A'
+consumer_key = 'CONSUMER-KEY'
+consumer_secret = 'CONSUMER-SECRET-KEY
+access_token = 'ACCESS-KEY'
+access_secret = 'ACCESS-SECRET-KEY'
 
-connection_string = "host='postgres.czrrxagkjjob.us-west-2.rds.amazonaws.com' dbname='postgres' user='erowid' password='password' port='5432'"
-table_name = 'cubs'
+connection_string = "CONN-STRING"
+table_name = 'TABLE-NAME'
+
