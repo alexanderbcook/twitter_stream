@@ -3,11 +3,11 @@
 #USAGE: python downloader.py -q portland -t db
 
 import tweepy
-import psycopg2
 import logging
 import argparse
 import csv
 import config
+from httplib import IncompleteRead
 from util import encode
 
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
@@ -30,20 +30,16 @@ parser = get_parser()
 args = parser.parse_args()
 
 if args.output == 'db':
-    conn = psycopg2.connect(config.connection_string)
-    cursor = conn.cursor()
     logging.debug('Connected database and writing tweets to %s' % config.connection_string)
 
 elif args.output == 'csv':
     logging.debug("Writing tweets to %s.csv" % args.query)
 
+
 count = 0
 
 class StreamListener(tweepy.StreamListener):
-
-    #def __init__(self):
-    #    self.count = 0
-
+    
     def on_status(self, data):
 
         global count
@@ -55,22 +51,22 @@ class StreamListener(tweepy.StreamListener):
         if args.output == 'csv':
             csvFile = open('data/%s.csv' % args.query, 'a')
             csvWriter = csv.writer(csvFile)
-            csvWriter.writerow([data.created_at, encode(data.text), data.id, encode(data.user.name), encode(data.user.location), encode(data.user.screen_name), encode(data.user.url)])
+            csvWriter.writerow([data.created_at, encode(data.text), encode(data.user.name), encode(data.user.location), encode(data.user.screen_name), encode(data.user.url)])
 
             return True
 
         elif args.output == 'db':
-            cursor.execute('CREATE TABLE IF NOT EXISTS twitter.%s (date date, text varchar, id integer, name varchar, location varchar, screen_name varchar, url varchar);')
-            cursor.execute('INSERT INTO twitter.cubs (date, text, id, name, location, screen_name, url) VALUES (%s, %s, %s, %s, %s, %s, %s);'
-                           % (data.created_at, encode(data.text), data.id, encode(data.user.name), encode(data.user.location), encode(data.user.screen_name), encode(data.user.url)))
 
             return True
 
     def on_error(self, status_code):
-
+        if IncompleteRead:
+            return True
         if status_code == 420:
             logging.debug('An error has occurred! This stream will now close.')
             return False
+        if KeyboardInterrupt:
+            stream.disconnect()
 
 if __name__ == '__main__':
     auth = tweepy.OAuthHandler(config.consumer_key, config.consumer_secret)
