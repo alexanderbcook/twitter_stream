@@ -1,17 +1,32 @@
 #!/usr/bin/env python
 
-#USAGE: python downloader.py -q portland -t db
+#USAGE: python downloader.py -q portland -m s
 
 import tweepy
 import logging
 import csv
 import config
+import redis
+import json
+import os
+import argparse
+from json import dumps
 from httplib import IncompleteRead
-from util import encode, connect_to_api, get_parser
+from util import encode, connect_to_api, json_serial
 
+redis = redis.StrictRedis(host='localhost', port=6379, db=0)
 logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 
-parser = get_parser()
+parser = argparse.ArgumentParser()
+parser.add_argument("-q",
+                    "--query",
+                    dest="query",
+                    help="Specify the Twitter filter terms.",
+                    default='-')
+parser.add_argument("-m",
+                    "--mode",
+                    dest="mode",
+                    help="Specify the mode. 's' will configure for straeaming, 'o' will run a one off instance.")
 args = parser.parse_args()
 
 logging.debug("Writing tweets to %s.csv" % args.query)
@@ -21,17 +36,29 @@ count = 0
 class StreamListener(tweepy.StreamListener):
     
     def on_status(self, data):
-
         global count
         count += 1
 
         if count % 100 == 0:
             logging.debug('%s tweets gathered.' % str(count))
 
-        csvFile = open('data/%s.csv' % args.query, 'a')
-        csvWriter = csv.writer(csvFile)
-        csvWriter.writerow([data.created_at, encode(data.text), encode(data.user.name), encode(data.user.location), encode(data.user.screen_name), encode(data.user.url)])
+        tweetID = data.id_str
 
+        tweet = {}
+        tweet['created_at'] = dumps(data.created_at, default=json_serial)
+        tweet['text'] = encode(data.text)
+        tweet['username'] = encode(data.user.screen_name)
+        tweet['url'] = encode(data.user.url)
+        tweet['location'] = encode(data.user.location)
+        json_tweet = json.dumps(tweet)
+        
+        redis.lpush(args.query, json_tweet)
+        
+        if args.mode == 's':
+            i = redis.llen(args.query)
+            if i % 500 == 0:
+                os.system('python writer.py -q %s' % args.query)
+                
 
     def on_error(self, status_code):
         if IncompleteRead:
