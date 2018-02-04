@@ -75,7 +75,7 @@ if __name__ == '__main__':
     logging.debug('Connected to Twitter stream, filtering on "%s".' % args.query)
     stream_listener = StreamListener()
     stream = tweepy.Stream(auth=api.auth, listener=stream_listener)
-    stream.filter(track=[str(args.query)], languages=['en'])
+    stream.filter(track=[str(args.query)], languages=['en'], stall_warnings=True)
 
 
 
