@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-#USAGE: python downloader.py -q portland -m s
+#USAGE: python listener.py -q portland -m d
 
 import tweepy
 import logging
@@ -26,7 +26,7 @@ parser.add_argument("-q",
 parser.add_argument("-m",
                     "--mode",
                     dest="mode",
-                    help="Specify the mode. 's' will configure for straeaming, 'o' will run a one off instance.")
+                    help="Specify the mode. 'f' will configure for writing to a file, 'd' will configure for writing to a database.")
 args = parser.parse_args()
 
 logging.debug("Writing tweets to %s.csv" % args.query)
@@ -45,6 +45,7 @@ class StreamListener(tweepy.StreamListener):
         tweetID = data.id_str
 
         tweet = {}
+        tweet['id'] = encode(data.id_str)
         tweet['created_at'] = dumps(data.created_at, default=json_serial)
         tweet['text'] = encode(data.text)
         tweet['username'] = encode(data.user.screen_name)
@@ -53,11 +54,14 @@ class StreamListener(tweepy.StreamListener):
         json_tweet = json.dumps(tweet)
         
         redis.lpush(args.query, json_tweet)
-        
-        if args.mode == 's':
-            i = redis.llen(args.query)
-            if i % 500 == 0:
+        i = redis.llen(args.query)
+
+        if args.mode == 'f':
+            if i % 50 == 0:
                 os.system('python writer.py -q %s' % args.query)
+        if args.mode == 'd':
+            if i % 50 == 0:
+                os.system('python upload.py -q %s' % args.query)
                 
 
     def on_error(self, status_code):
