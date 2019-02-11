@@ -21,15 +21,20 @@ parser = argparse.ArgumentParser()
 parser.add_argument("-q",
                     "--query",
                     dest="query",
-                    help="Specify the Twitter filter terms.",
+                    help="Specify the Twitter query terms.",
                     default='-')
+parser.add_argument("-f",
+                    "--follow",
+                    dest="follow",
+                    help="Specify user names to follow")
+
 parser.add_argument("-m",
                     "--mode",
                     dest="mode",
                     help="Specify the mode. 'f' will configure for writing to a file, 'd' will configure for writing to a database.")
 args = parser.parse_args()
 
-logging.debug("Writing tweets to %s.csv" % args.query)
+default = ['1606472113', '1602852614']
 
 count = 0
 
@@ -56,6 +61,9 @@ class StreamListener(tweepy.StreamListener):
         redis.lpush(args.query, json_tweet)
         i = redis.llen(args.query)
 
+        if args.follow == 'default':
+            if i == 1:
+                os.system('python upload-police-data.py -q %s' % args.query)
         if args.mode == 'f':
             if i % 50 == 0:
                 os.system('python writer.py -q %s' % args.query)
@@ -79,7 +87,15 @@ if __name__ == '__main__':
     logging.debug('Connected to Twitter stream, filtering on "%s".' % args.query)
     stream_listener = StreamListener()
     stream = tweepy.Stream(auth=api.auth, listener=stream_listener)
-    stream.filter(track=[str(args.query)], languages=['en'], stall_warnings=True)
+    if len(args.query) > 1:
+        stream.filter(track=[str(args.query)], languages=['en'], async=True)
+    elif args.follow == 'default':
+        args.query = 'default'
+        stream.filter(follow=default, languages=['en'], async=True)
+    elif len(args.follow) > 1:
+        args.query = args.follow
+        stream.filter(follow=[str(args.follow)], languages=['en'], async=True)
+
 
 
 
