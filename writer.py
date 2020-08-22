@@ -12,7 +12,7 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 try:
     redis = redis.StrictRedis(host='localhost', port=6379, db=0)
 except:
-    print "Can't connect to Redis!"
+    print("Can't connect to Redis!")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-q",

@@ -15,11 +15,11 @@ logging.basicConfig(format='%(levelname)s:%(message)s', level=logging.DEBUG)
 try:
     conn = psycopg2.connect("dbname='postgres' host ='localhost'")
 except:
-    print "Can't connect to PSQL!"
+    print("Can't connect to PSQL!")
 try:
     redis = redis.StrictRedis(host='localhost', port=6379, db=0)
 except:
-    print "Can't connect to Redis!"
+    print("Can't connect to Redis!")
 
 parser = argparse.ArgumentParser()
 parser.add_argument("-q",

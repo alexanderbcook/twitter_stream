@@ -11,7 +11,6 @@ import json
 import os
 import argparse
 from json import dumps
-from httplib import IncompleteRead
 from util import encode, connect_to_api, json_serial
 
 redis = redis.StrictRedis(host='localhost', port=6379, db=0)
@@ -50,12 +49,12 @@ class StreamListener(tweepy.StreamListener):
         tweetID = data.id_str
 
         tweet = {}
-        tweet['id'] = encode(data.id_str)
+        tweet['id'] = data.id_str
         tweet['created_at'] = dumps(data.created_at, default=json_serial)
-        tweet['text'] = encode(data.text)
-        tweet['username'] = encode(data.user.screen_name)
-        tweet['url'] = encode(data.user.url)
-        tweet['location'] = encode(data.user.location)
+        tweet['text'] = data.text
+        tweet['username'] = data.user.screen_name
+        tweet['url'] = data.user.url
+        tweet['location'] = data.user.location
         json_tweet = json.dumps(tweet)
         
         redis.lpush(args.query, json_tweet)
@@ -73,8 +72,6 @@ class StreamListener(tweepy.StreamListener):
                 
 
     def on_error(self, status_code):
-        if IncompleteRead:
-            return True
         if status_code == 420:
             logging.debug('Tweets are being rate-limited..')
             return False
@@ -88,13 +85,13 @@ if __name__ == '__main__':
     stream_listener = StreamListener()
     stream = tweepy.Stream(auth=api.auth, listener=stream_listener)
     if len(args.query) > 1:
-        stream.filter(track=[str(args.query)], languages=['en'], async=True)
+        stream.filter(track=[str(args.query)], languages=['en'])
     elif args.follow == 'default':
         args.query = 'default'
-        stream.filter(follow=default, languages=['en'], async=True)
+        stream.filter(follow=default, languages=['en'])
     elif len(args.follow) > 1:
         args.query = args.follow
-        stream.filter(follow=[str(args.follow)], languages=['en'], async=True)
+        stream.filter(follow=[str(args.follow)], languages=['en'])
 
 
 
